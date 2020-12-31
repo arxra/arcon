@@ -323,12 +323,12 @@ pub struct Event {
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -342,7 +342,7 @@ pub struct Event {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
@@ -480,12 +480,12 @@ pub struct Event {
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -499,7 +499,7 @@ pub struct Event {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
@@ -571,12 +571,12 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -590,7 +590,7 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
@@ -707,15 +707,10 @@ impl Operator for MyOperator {
 </span><span class="boring">        .operator(
 </span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;MyOperator&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| TimerOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;TimerOperator&quot;);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -807,15 +802,10 @@ pub struct CustomEvent {
 </span><span class="boring">        .operator(
 </span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;MyOperator&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| TimerOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;TimerOperator&quot;);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -910,15 +900,10 @@ impl Operator for TimerOperator {
 </span><span class="boring">        .operator(
 </span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;MyOperator&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| TimerOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;TimerOperator&quot;);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -1010,15 +995,10 @@ impl Operator for TimerOperator {
         .operator(
             |_: Arc&lt;Sled&gt;| MyOperator,
             |conf| {
-                conf.set_state_id(&quot;MyOperator&quot;);
+                conf.instances = 1;
             },
         )
-        .operator(
-            |_: Arc&lt;Sled&gt;| TimerOperator,
-            |conf| {
-                conf.set_state_id(&quot;TimerOperator&quot;);
-            },
-        )
+        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
         .build();
 <span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -1481,7 +1461,7 @@ dealing with a single object.</p>
 <h1><a class="header" href="#accessing-state" id="accessing-state">Accessing State</a></h1>
 <p>This section covers different approaches to accessing state of a live Arcon application.</p>
 <p>Arcon State is identified through a <code>StateID</code> which is an type alias
-for a String. The state id is set through the Operator configuration that was discussed in the <a href="pipeline/stream.html">Stream API</a> section.</p>
+for a String. The state id of an <code>ArconState</code> object is its struct name.</p>
 <ul>
 <li><a href="pipeline/state.html#snapshot">Snapshot</a></li>
 <li><a href="pipeline/state.html#watching-from-a-thread">Watching from a thread</a></li>
@@ -1554,12 +1534,12 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -1573,7 +1553,7 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
@@ -1642,12 +1622,12 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span>    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span>    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
         let events_len = s.events().len();
         println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
     });
@@ -1661,14 +1641,13 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
 </span><span class="boring">}
 </span></code></pre>
-<p>The above call assumes that MyState has been registered with the state id <code>map_state_one</code>.
-And do note that for the watch call to work, MyState needs to implement <code>From&lt;Snapshot&gt;</code> as seen below.</p>
+<p>For the call to work, MyState needs to implement <code>From&lt;Snapshot&gt;</code> as seen below.</p>
 <pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
 </span><span class="boring">use examples::SnapshotComponent;
 </span><span class="boring">use std::{path::Path, sync::Arc};
@@ -1730,12 +1709,12 @@ And do note that for the watch call to work, MyState needs to implement <code>Fr
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -1749,7 +1728,7 @@ And do note that for the watch call to work, MyState needs to implement <code>Fr
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
@@ -1864,12 +1843,12 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -1883,7 +1862,7 @@ The snippet below shows how an example of how to do this.</p>
         .wait_timeout(std::time::Duration::from_millis(200))
         .expect(&quot;Failed to start component&quot;);
 
-    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 <span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();

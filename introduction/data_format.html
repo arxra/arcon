@@ -262,12 +262,12 @@ pub struct Event {
 </span><span class="boring">            },
 </span><span class="boring">            MyState::new,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;map_state_one&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(&quot;map_state_one&quot;, |epoch, mut s: MyState&lt;Sled&gt;| {
+</span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
 </span><span class="boring">        let events_len = s.events().len();
 </span><span class="boring">        println!(&quot;Events Length {:?} for Epoch {}&quot;, events_len, epoch);
 </span><span class="boring">    });
@@ -281,7 +281,7 @@ pub struct Event {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with(&quot;map_state_one&quot;, snapshot_comp);
+</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();

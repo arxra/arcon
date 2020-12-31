@@ -269,15 +269,10 @@ impl Operator for MyOperator {
 </span><span class="boring">        .operator(
 </span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;MyOperator&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| TimerOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;TimerOperator&quot;);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -369,15 +364,10 @@ pub struct CustomEvent {
 </span><span class="boring">        .operator(
 </span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;MyOperator&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| TimerOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;TimerOperator&quot;);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -472,15 +462,10 @@ impl Operator for TimerOperator {
 </span><span class="boring">        .operator(
 </span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
 </span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;MyOperator&quot;);
+</span><span class="boring">                conf.instances = 1;
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| TimerOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_state_id(&quot;TimerOperator&quot;);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -572,15 +557,10 @@ impl Operator for TimerOperator {
         .operator(
             |_: Arc&lt;Sled&gt;| MyOperator,
             |conf| {
-                conf.set_state_id(&quot;MyOperator&quot;);
+                conf.instances = 1;
             },
         )
-        .operator(
-            |_: Arc&lt;Sled&gt;| TimerOperator,
-            |conf| {
-                conf.set_state_id(&quot;TimerOperator&quot;);
-            },
-        )
+        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
         .build();
 <span class="boring">
 </span><span class="boring">    pipeline.start();
