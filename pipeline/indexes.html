@@ -167,24 +167,16 @@
 </span>#[derive(ArconState)]
 pub struct StreamState&lt;B: Backend&gt; {
     counter: Value&lt;u64, B&gt;,
-    counters_map: Map&lt;u64, String, B&gt;,
+    counters_map: HashTable&lt;u64, String, B&gt;,
     counters: Appender&lt;u64, B&gt;,
 }
 
 impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
     pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-
-        backend.register_value_handle(&amp;mut counter_handle);
-        backend.register_map_handle(&amp;mut counters_map_handle);
-        backend.register_vec_handle(&amp;mut counters_handle);
-
         Self {
-            counter: Value::new(counter_handle.activate(backend.clone())),
-            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-            counters: Appender::new(counters_handle.activate(backend)),
+            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+            counters: Appender::new(&quot;_counters&quot;, backend),
         }
     }
 }
@@ -250,24 +242,16 @@ impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">#[derive(ArconState)]
 </span><span class="boring">pub struct StreamState&lt;B: Backend&gt; {
 </span><span class="boring">    counter: Value&lt;u64, B&gt;,
-</span><span class="boring">    counters_map: Map&lt;u64, String, B&gt;,
+</span><span class="boring">    counters_map: HashTable&lt;u64, String, B&gt;,
 </span><span class="boring">    counters: Appender&lt;u64, B&gt;,
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-</span><span class="boring">        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-</span><span class="boring">        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-</span><span class="boring">
-</span><span class="boring">        backend.register_value_handle(&amp;mut counter_handle);
-</span><span class="boring">        backend.register_map_handle(&amp;mut counters_map_handle);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut counters_handle);
-</span><span class="boring">
 </span><span class="boring">        Self {
-</span><span class="boring">            counter: Value::new(counter_handle.activate(backend.clone())),
-</span><span class="boring">            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-</span><span class="boring">            counters: Appender::new(counters_handle.activate(backend)),
+</span><span class="boring">            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+</span><span class="boring">            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+</span><span class="boring">            counters: Appender::new(&quot;_counters&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -327,7 +311,7 @@ impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span></code></pre>
 <p>There is no <code>Eager</code> version of Value provided as it does not make much sense while 
 dealing with a single object.</p>
-<h2><a class="header" href="#map" id="map">Map</a></h2>
+<h2><a class="header" href="#hashtable" id="hashtable">HashTable</a></h2>
 <p>An index for managing an unordered hash index. </p>
 <pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
 </span><span class="boring">use std::sync::Arc;
@@ -335,24 +319,16 @@ dealing with a single object.</p>
 </span><span class="boring">#[derive(ArconState)]
 </span><span class="boring">pub struct StreamState&lt;B: Backend&gt; {
 </span><span class="boring">    counter: Value&lt;u64, B&gt;,
-</span><span class="boring">    counters_map: Map&lt;u64, String, B&gt;,
+</span><span class="boring">    counters_map: HashTable&lt;u64, String, B&gt;,
 </span><span class="boring">    counters: Appender&lt;u64, B&gt;,
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-</span><span class="boring">        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-</span><span class="boring">        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-</span><span class="boring">
-</span><span class="boring">        backend.register_value_handle(&amp;mut counter_handle);
-</span><span class="boring">        backend.register_map_handle(&amp;mut counters_map_handle);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut counters_handle);
-</span><span class="boring">
 </span><span class="boring">        Self {
-</span><span class="boring">            counter: Value::new(counter_handle.activate(backend.clone())),
-</span><span class="boring">            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-</span><span class="boring">            counters: Appender::new(counters_handle.activate(backend)),
+</span><span class="boring">            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+</span><span class="boring">            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+</span><span class="boring">            counters: Appender::new(&quot;_counters&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -418,24 +394,16 @@ dealing with a single object.</p>
 </span><span class="boring">#[derive(ArconState)]
 </span><span class="boring">pub struct StreamState&lt;B: Backend&gt; {
 </span><span class="boring">    counter: Value&lt;u64, B&gt;,
-</span><span class="boring">    counters_map: Map&lt;u64, String, B&gt;,
+</span><span class="boring">    counters_map: HashTable&lt;u64, String, B&gt;,
 </span><span class="boring">    counters: Appender&lt;u64, B&gt;,
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-</span><span class="boring">        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-</span><span class="boring">        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-</span><span class="boring">
-</span><span class="boring">        backend.register_value_handle(&amp;mut counter_handle);
-</span><span class="boring">        backend.register_map_handle(&amp;mut counters_map_handle);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut counters_handle);
-</span><span class="boring">
 </span><span class="boring">        Self {
-</span><span class="boring">            counter: Value::new(counter_handle.activate(backend.clone())),
-</span><span class="boring">            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-</span><span class="boring">            counters: Appender::new(counters_handle.activate(backend)),
+</span><span class="boring">            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+</span><span class="boring">            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+</span><span class="boring">            counters: Appender::new(&quot;_counters&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}

@@ -266,13 +266,14 @@ impl Operator for MyOperator {
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
-</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| MyOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| TimerOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -361,13 +362,14 @@ pub struct CustomEvent {
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
-</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| MyOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| TimerOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -459,13 +461,14 @@ impl Operator for TimerOperator {
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
-</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| MyOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| TimerOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -554,13 +557,14 @@ impl Operator for TimerOperator {
         .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .operator(
-            |_: Arc&lt;Sled&gt;| MyOperator,
-            |conf| {
-                conf.instances = 1;
-            },
-        )
-        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| MyOperator),
+            conf: Default::default(),
+        })
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| TimerOperator),
+            conf: Default::default(),
+        })
         .build();
 <span class="boring">
 </span><span class="boring">    pipeline.start();

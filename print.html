@@ -189,8 +189,10 @@ fn main() {
             conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .filter(|x| *x &gt; 50)
-        .map(|x| x + 10)
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| Filter::new(|x| *x &gt; 50)),
+            conf: Default::default(),
+        })
         .to_console()
         .build();
 
@@ -282,11 +284,8 @@ pub struct Event {
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut events_handle = Handle::vec(&quot;_events&quot;);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut events_handle);
-</span><span class="boring">
 </span><span class="boring">        MyState {
-</span><span class="boring">            events: Appender::new(events_handle.activate(backend)),
+</span><span class="boring">            events: Appender::new(&quot;_events&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -315,17 +314,15 @@ pub struct Event {
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
@@ -389,7 +386,10 @@ fn main() {
                 conf.set_timestamp_extractor(|x: &amp;Event| x.id);
             },
         )
-        .filter(|event| event.id &gt; 50)
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| Filter::new(|event: &amp;Event| event.id &gt; 50)),
+            conf: Default::default(),
+        })
         .build();
 
     pipeline.start();
@@ -439,11 +439,8 @@ pub struct Event {
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut events_handle = Handle::vec(&quot;_events&quot;);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut events_handle);
-</span><span class="boring">
 </span><span class="boring">        MyState {
-</span><span class="boring">            events: Appender::new(events_handle.activate(backend)),
+</span><span class="boring">            events: Appender::new(&quot;_events&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -472,17 +469,15 @@ pub struct Event {
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
@@ -530,11 +525,8 @@ pub struct MyState&lt;B: Backend&gt; {
 
 impl&lt;B: Backend&gt; MyState&lt;B&gt; {
     pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-        let mut events_handle = Handle::vec(&quot;_events&quot;);
-        backend.register_vec_handle(&amp;mut events_handle);
-
         MyState {
-            events: Appender::new(events_handle.activate(backend)),
+            events: Appender::new(&quot;_events&quot;, backend),
         }
     }
 }
@@ -563,17 +555,15 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
@@ -704,13 +694,14 @@ impl Operator for MyOperator {
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
-</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| MyOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| TimerOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -799,13 +790,14 @@ pub struct CustomEvent {
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
-</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| MyOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| TimerOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -897,13 +889,14 @@ impl Operator for TimerOperator {
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
-</span><span class="boring">        .operator(
-</span><span class="boring">            |_: Arc&lt;Sled&gt;| MyOperator,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
-</span><span class="boring">        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| MyOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| TimerOperator),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -992,13 +985,14 @@ impl Operator for TimerOperator {
         .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .operator(
-            |_: Arc&lt;Sled&gt;| MyOperator,
-            |conf| {
-                conf.instances = 1;
-            },
-        )
-        .operator(|_: Arc&lt;Sled&gt;| TimerOperator, |_| {})
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| MyOperator),
+            conf: Default::default(),
+        })
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| TimerOperator),
+            conf: Default::default(),
+        })
         .build();
 <span class="boring">
 </span><span class="boring">    pipeline.start();
@@ -1063,8 +1057,10 @@ fn main() {
             conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .filter(|x| *x &gt; 50)
-        .map(|x| x + 10)
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| Filter::new(|x| *x &gt; 50)),
+            conf: Default::default(),
+        })
         .to_console()
         .build();
 
@@ -1083,7 +1079,10 @@ fn main() {
         .file(&quot;file_source_data&quot;, |cfg| {
             cfg.set_arcon_time(ArconTime::Process);
         })
-        .flatmap(|x: u64| (0..x))
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| FlatMap::new(|x| (0..x))),
+            conf: Default::default(),
+        })
         .to_console()
         .build();
 
@@ -1132,24 +1131,16 @@ However, if the <code>rocksdb</code> feature is on, then RocksDB will be used as
 </span>#[derive(ArconState)]
 pub struct StreamState&lt;B: Backend&gt; {
     counter: Value&lt;u64, B&gt;,
-    counters_map: Map&lt;u64, String, B&gt;,
+    counters_map: HashTable&lt;u64, String, B&gt;,
     counters: Appender&lt;u64, B&gt;,
 }
 
 impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
     pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-
-        backend.register_value_handle(&amp;mut counter_handle);
-        backend.register_map_handle(&amp;mut counters_map_handle);
-        backend.register_vec_handle(&amp;mut counters_handle);
-
         Self {
-            counter: Value::new(counter_handle.activate(backend.clone())),
-            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-            counters: Appender::new(counters_handle.activate(backend)),
+            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+            counters: Appender::new(&quot;_counters&quot;, backend),
         }
     }
 }
@@ -1215,24 +1206,16 @@ impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">#[derive(ArconState)]
 </span><span class="boring">pub struct StreamState&lt;B: Backend&gt; {
 </span><span class="boring">    counter: Value&lt;u64, B&gt;,
-</span><span class="boring">    counters_map: Map&lt;u64, String, B&gt;,
+</span><span class="boring">    counters_map: HashTable&lt;u64, String, B&gt;,
 </span><span class="boring">    counters: Appender&lt;u64, B&gt;,
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-</span><span class="boring">        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-</span><span class="boring">        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-</span><span class="boring">
-</span><span class="boring">        backend.register_value_handle(&amp;mut counter_handle);
-</span><span class="boring">        backend.register_map_handle(&amp;mut counters_map_handle);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut counters_handle);
-</span><span class="boring">
 </span><span class="boring">        Self {
-</span><span class="boring">            counter: Value::new(counter_handle.activate(backend.clone())),
-</span><span class="boring">            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-</span><span class="boring">            counters: Appender::new(counters_handle.activate(backend)),
+</span><span class="boring">            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+</span><span class="boring">            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+</span><span class="boring">            counters: Appender::new(&quot;_counters&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -1292,7 +1275,7 @@ impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span></code></pre>
 <p>There is no <code>Eager</code> version of Value provided as it does not make much sense while 
 dealing with a single object.</p>
-<h2><a class="header" href="#map-1" id="map-1">Map</a></h2>
+<h2><a class="header" href="#hashtable" id="hashtable">HashTable</a></h2>
 <p>An index for managing an unordered hash index. </p>
 <pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
 </span><span class="boring">use std::sync::Arc;
@@ -1300,24 +1283,16 @@ dealing with a single object.</p>
 </span><span class="boring">#[derive(ArconState)]
 </span><span class="boring">pub struct StreamState&lt;B: Backend&gt; {
 </span><span class="boring">    counter: Value&lt;u64, B&gt;,
-</span><span class="boring">    counters_map: Map&lt;u64, String, B&gt;,
+</span><span class="boring">    counters_map: HashTable&lt;u64, String, B&gt;,
 </span><span class="boring">    counters: Appender&lt;u64, B&gt;,
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-</span><span class="boring">        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-</span><span class="boring">        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-</span><span class="boring">
-</span><span class="boring">        backend.register_value_handle(&amp;mut counter_handle);
-</span><span class="boring">        backend.register_map_handle(&amp;mut counters_map_handle);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut counters_handle);
-</span><span class="boring">
 </span><span class="boring">        Self {
-</span><span class="boring">            counter: Value::new(counter_handle.activate(backend.clone())),
-</span><span class="boring">            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-</span><span class="boring">            counters: Appender::new(counters_handle.activate(backend)),
+</span><span class="boring">            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+</span><span class="boring">            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+</span><span class="boring">            counters: Appender::new(&quot;_counters&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -1383,24 +1358,16 @@ dealing with a single object.</p>
 </span><span class="boring">#[derive(ArconState)]
 </span><span class="boring">pub struct StreamState&lt;B: Backend&gt; {
 </span><span class="boring">    counter: Value&lt;u64, B&gt;,
-</span><span class="boring">    counters_map: Map&lt;u64, String, B&gt;,
+</span><span class="boring">    counters_map: HashTable&lt;u64, String, B&gt;,
 </span><span class="boring">    counters: Appender&lt;u64, B&gt;,
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; StreamState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut counter_handle = Handle::value(&quot;_counter&quot;);
-</span><span class="boring">        let mut counters_map_handle = Handle::map(&quot;_counters_map&quot;);
-</span><span class="boring">        let mut counters_handle = Handle::vec(&quot;_counters&quot;);
-</span><span class="boring">
-</span><span class="boring">        backend.register_value_handle(&amp;mut counter_handle);
-</span><span class="boring">        backend.register_map_handle(&amp;mut counters_map_handle);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut counters_handle);
-</span><span class="boring">
 </span><span class="boring">        Self {
-</span><span class="boring">            counter: Value::new(counter_handle.activate(backend.clone())),
-</span><span class="boring">            counters_map: Map::new(counters_map_handle.activate(backend.clone())),
-</span><span class="boring">            counters: Appender::new(counters_handle.activate(backend)),
+</span><span class="boring">            counter: Value::new(&quot;_counter&quot;, backend.clone()),
+</span><span class="boring">            counters_map: HashTable::new(&quot;_counters_map&quot;, backend.clone()),
+</span><span class="boring">            counters: Appender::new(&quot;_counters&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -1493,11 +1460,8 @@ pub struct MyState&lt;B: Backend&gt; {
 
 impl&lt;B: Backend&gt; MyState&lt;B&gt; {
     pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-        let mut events_handle = Handle::vec(&quot;_events&quot;);
-        backend.register_vec_handle(&amp;mut events_handle);
-
         MyState {
-            events: Appender::new(events_handle.activate(backend)),
+            events: Appender::new(&quot;_events&quot;, backend),
         }
     }
 }
@@ -1526,17 +1490,15 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
@@ -1581,11 +1543,8 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut events_handle = Handle::vec(&quot;_events&quot;);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut events_handle);
-</span><span class="boring">
 </span><span class="boring">        MyState {
-</span><span class="boring">            events: Appender::new(events_handle.activate(backend)),
+</span><span class="boring">            events: Appender::new(&quot;_events&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -1614,17 +1573,15 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span>    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
@@ -1668,11 +1625,8 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut events_handle = Handle::vec(&quot;_events&quot;);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut events_handle);
-</span><span class="boring">
 </span><span class="boring">        MyState {
-</span><span class="boring">            events: Appender::new(events_handle.activate(backend)),
+</span><span class="boring">            events: Appender::new(&quot;_events&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -1701,17 +1655,15 @@ impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
@@ -1802,11 +1754,8 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">
 </span><span class="boring">impl&lt;B: Backend&gt; MyState&lt;B&gt; {
 </span><span class="boring">    pub fn new(backend: Arc&lt;B&gt;) -&gt; Self {
-</span><span class="boring">        let mut events_handle = Handle::vec(&quot;_events&quot;);
-</span><span class="boring">        backend.register_vec_handle(&amp;mut events_handle);
-</span><span class="boring">
 </span><span class="boring">        MyState {
-</span><span class="boring">            events: Appender::new(events_handle.activate(backend)),
+</span><span class="boring">            events: Appender::new(&quot;_events&quot;, backend),
 </span><span class="boring">        }
 </span><span class="boring">    }
 </span><span class="boring">}
@@ -1835,17 +1784,15 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
 </span><span class="boring">            },
 </span><span class="boring">        )
-</span><span class="boring">        .filter(|event| event.id &gt; 50)
-</span><span class="boring">        .map_with_state(
-</span><span class="boring">            |x, state: &amp;mut MyState&lt;Sled&gt;| {
-</span><span class="boring">                state.events().append(x)?;
-</span><span class="boring">                Ok(x)
-</span><span class="boring">            },
-</span><span class="boring">            MyState::new,
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.instances = 1;
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">                Map::stateful(MyState::new(backend), |x, state| {
+</span><span class="boring">                    state.events().append(x)?;
+</span><span class="boring">                    Ok(x)
+</span><span class="boring">                })
+</span><span class="boring">            }),
+</span><span class="boring">            conf: Default::default(),
+</span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
 </span><span class="boring">    pipeline.watch(|epoch, mut s: MyState&lt;Sled&gt;| {
