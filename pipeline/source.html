@@ -169,10 +169,33 @@ or adding your own <code>Source</code> implementation.</p>
 <li><a href="#creating-a-custom-source">Creating a custom Source</a></li>
 </ul>
 <h2><a class="header" href="#source-configuration" id="source-configuration">Source Configuration</a></h2>
-<p>Whether you are using a pre-defined source or your own. You will have access 
-to modify a <code>SourceConf</code> object through a closure.</p>
-<p>By default, <code>Time</code> in Arcon is based on event time. However if you want to configure
-it to Process time, see the <a href="#file">File</a> source example.</p>
+<p>Whether you are using a pre-defined source or your own. You will have the chance
+to configure a <code>SourceConf</code> object. Time in Arcon is by default based on event time.
+However, if you wish to swap to Process Time, you may do so by choosing <code>ArconTime::Process</code>.
+Note that if you are using <code>ArconTime::Event</code>, then a Timestamp Extractor also needs to be set. See down 
+below that shows an example of a Source that is working with the primitive <code>u64</code>.</p>
+<pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
+</span><span class="boring">
+</span><span class="boring">fn main() {
+</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">        .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
+</span>            conf.set_arcon_time(ArconTime::Event);
+            conf.set_timestamp_extractor(|x: &amp;u64| *x);
+<span class="boring">        })
+</span><span class="boring">        .operator(OperatorBuilder {
+</span><span class="boring">            constructor: Arc::new(|_| Filter::new(|x| *x &gt; 50)),
+</span><span class="boring">            conf: OperatorConf {
+</span><span class="boring">                parallelism_strategy: ParallelismStrategy::Static(1),
+</span><span class="boring">                ..Default::default()
+</span><span class="boring">            },
+</span><span class="boring">        })
+</span><span class="boring">        .to_console()
+</span><span class="boring">        .build();
+</span><span class="boring">
+</span><span class="boring">    pipeline.start();
+</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">}
+</span></code></pre>
 <h2><a class="header" href="#pre-defined-sources" id="pre-defined-sources">Pre-defined Sources</a></h2>
 <h3><a class="header" href="#collection" id="collection">Collection</a></h3>
 <p>A Collection source is mostly for testing things out.
@@ -187,6 +210,10 @@ fn main() {
         })
         .operator(OperatorBuilder {
             constructor: Arc::new(|_| Filter::new(|x| *x &gt; 50)),
+            conf: Default::default(),
+        })
+        .operator(OperatorBuilder {
+            constructor: Arc::new(|_| Map::new(|x| x + 10)),
             conf: Default::default(),
         })
         .to_console()

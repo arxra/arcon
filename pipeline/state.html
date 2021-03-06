@@ -183,9 +183,9 @@ Once a Snapshot has been committed, it will be available for access outside the 
 </span><span class="boring">#[derive(Arcon, Arrow, prost::Message, Copy, Clone)]
 </span><span class="boring">#[arcon(unsafe_ser_id = 12, reliable_ser_id = 13, version = 1, keys = &quot;id&quot;)]
 </span><span class="boring">pub struct Event {
-</span><span class="boring">    #[prost(uint64, tag = &quot;1&quot;)]
+</span><span class="boring">    #[prost(uint64)]
 </span><span class="boring">    pub id: u64,
-</span><span class="boring">    #[prost(float, tag = &quot;2&quot;)]
+</span><span class="boring">    #[prost(float)]
 </span><span class="boring">    pub data: f32,
 </span><span class="boring">}
 </span><span class="boring">
@@ -206,8 +206,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 }
 
 <span class="boring">
-</span><span class="boring">#[tokio::main]
-</span><span class="boring">async fn main() -&gt; datafusion::error::Result&lt;()&gt; {
+</span><span class="boring">fn main() {
 </span><span class="boring">    let conf = ArconConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
@@ -234,7 +233,9 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">
+</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
+</span><span class="boring">    });
 </span><span class="boring">
 </span><span class="boring">    let kompact_system = KompactConfig::default().build().expect(&quot;KompactSystem&quot;);
 </span><span class="boring">    // Create Kompact component to receive snapshots
@@ -249,8 +250,6 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
-</span><span class="boring">
-</span><span class="boring">    Ok(())
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#watching-from-a-thread" id="watching-from-a-thread">Watching from a thread</a></h2>
@@ -264,9 +263,9 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">#[derive(Arcon, Arrow, prost::Message, Copy, Clone)]
 </span><span class="boring">#[arcon(unsafe_ser_id = 12, reliable_ser_id = 13, version = 1, keys = &quot;id&quot;)]
 </span><span class="boring">pub struct Event {
-</span><span class="boring">    #[prost(uint64, tag = &quot;1&quot;)]
+</span><span class="boring">    #[prost(uint64)]
 </span><span class="boring">    pub id: u64,
-</span><span class="boring">    #[prost(float, tag = &quot;2&quot;)]
+</span><span class="boring">    #[prost(float)]
 </span><span class="boring">    pub data: f32,
 </span><span class="boring">}
 </span><span class="boring">
@@ -287,8 +286,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">
-</span><span class="boring">#[tokio::main]
-</span><span class="boring">async fn main() -&gt; datafusion::error::Result&lt;()&gt; {
+</span><span class="boring">fn main() {
 </span><span class="boring">    let conf = ArconConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
@@ -315,7 +313,9 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span>
+</span>    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+        println!(&quot;Got state object for epoch {}&quot;, epoch);
+    });
 <span class="boring">
 </span><span class="boring">    let kompact_system = KompactConfig::default().build().expect(&quot;KompactSystem&quot;);
 </span><span class="boring">    // Create Kompact component to receive snapshots
@@ -330,8 +330,6 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
-</span><span class="boring">
-</span><span class="boring">    Ok(())
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#watching-from-a-kompact-component" id="watching-from-a-kompact-component">Watching from a Kompact component</a></h2>
@@ -391,9 +389,9 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">#[derive(Arcon, Arrow, prost::Message, Copy, Clone)]
 </span><span class="boring">#[arcon(unsafe_ser_id = 12, reliable_ser_id = 13, version = 1, keys = &quot;id&quot;)]
 </span><span class="boring">pub struct Event {
-</span><span class="boring">    #[prost(uint64, tag = &quot;1&quot;)]
+</span><span class="boring">    #[prost(uint64)]
 </span><span class="boring">    pub id: u64,
-</span><span class="boring">    #[prost(float, tag = &quot;2&quot;)]
+</span><span class="boring">    #[prost(float)]
 </span><span class="boring">    pub data: f32,
 </span><span class="boring">}
 </span><span class="boring">
@@ -414,8 +412,7 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">
-</span><span class="boring">#[tokio::main]
-</span><span class="boring">async fn main() -&gt; datafusion::error::Result&lt;()&gt; {
+</span><span class="boring">fn main() {
 </span><span class="boring">    let conf = ArconConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
@@ -442,7 +439,9 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">
+</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
+</span><span class="boring">    });
 </span><span class="boring">
 </span>    let kompact_system = KompactConfig::default().build().expect(&quot;KompactSystem&quot;);
     // Create Kompact component to receive snapshots
@@ -457,8 +456,6 @@ The snippet below shows how an example of how to do this.</p>
 <span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
-</span><span class="boring">
-</span><span class="boring">    Ok(())
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#executing-sql-queries" id="executing-sql-queries">Executing SQL queries</a></h2>

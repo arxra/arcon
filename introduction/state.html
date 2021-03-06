@@ -191,9 +191,9 @@ in an <code>Appender</code> index.</p>
 </span>#[derive(Arcon, Arrow, prost::Message, Copy, Clone)]
 #[arcon(unsafe_ser_id = 12, reliable_ser_id = 13, version = 1, keys = &quot;id&quot;)]
 pub struct Event {
-    #[prost(uint64, tag = &quot;1&quot;)]
+    #[prost(uint64)]
     pub id: u64,
-    #[prost(float, tag = &quot;2&quot;)]
+    #[prost(float)]
     pub data: f32,
 }
 <span class="boring">
@@ -214,8 +214,7 @@ pub struct Event {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">
-</span><span class="boring">#[tokio::main]
-</span><span class="boring">async fn main() -&gt; datafusion::error::Result&lt;()&gt; {
+</span><span class="boring">fn main() {
 </span><span class="boring">    let conf = ArconConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
@@ -242,7 +241,9 @@ pub struct Event {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">
+</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
+</span><span class="boring">    });
 </span><span class="boring">
 </span><span class="boring">    let kompact_system = KompactConfig::default().build().expect(&quot;KompactSystem&quot;);
 </span><span class="boring">    // Create Kompact component to receive snapshots
@@ -257,8 +258,6 @@ pub struct Event {
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
-</span><span class="boring">
-</span><span class="boring">    Ok(())
 </span><span class="boring">}
 </span></code></pre>
 <p>We then create our custom state object <code>MyState</code> and add the
@@ -275,9 +274,9 @@ above the field.</p>
 </span><span class="boring">#[derive(Arcon, Arrow, prost::Message, Copy, Clone)]
 </span><span class="boring">#[arcon(unsafe_ser_id = 12, reliable_ser_id = 13, version = 1, keys = &quot;id&quot;)]
 </span><span class="boring">pub struct Event {
-</span><span class="boring">    #[prost(uint64, tag = &quot;1&quot;)]
+</span><span class="boring">    #[prost(uint64)]
 </span><span class="boring">    pub id: u64,
-</span><span class="boring">    #[prost(float, tag = &quot;2&quot;)]
+</span><span class="boring">    #[prost(float)]
 </span><span class="boring">    pub data: f32,
 </span><span class="boring">}
 </span><span class="boring">
@@ -298,8 +297,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 }
 
 <span class="boring">
-</span><span class="boring">#[tokio::main]
-</span><span class="boring">async fn main() -&gt; datafusion::error::Result&lt;()&gt; {
+</span><span class="boring">fn main() {
 </span><span class="boring">    let conf = ArconConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
@@ -326,7 +324,9 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">
+</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
+</span><span class="boring">    });
 </span><span class="boring">
 </span><span class="boring">    let kompact_system = KompactConfig::default().build().expect(&quot;KompactSystem&quot;);
 </span><span class="boring">    // Create Kompact component to receive snapshots
@@ -341,8 +341,6 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">    pipeline.start();
 </span><span class="boring">    pipeline.await_termination();
-</span><span class="boring">
-</span><span class="boring">    Ok(())
 </span><span class="boring">}
 </span></code></pre>
 <p>Examples of more state indexes can be found <a href="../pipeline/indexes.html">here</a>.</p>
