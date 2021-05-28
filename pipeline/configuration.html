@@ -178,7 +178,7 @@ the batching of events to a maximum of 1024 events.</p>
 
 fn main() {
     let path = &quot;guide/examples/arcon.conf&quot;;
-    let conf = ArconConf::from_file(path).expect(&quot;could not read conf&quot;);
+    let conf = ArconConf::from_file(path);
     let _pipeline = Pipeline::with_conf(conf);
 }
 </code></pre>

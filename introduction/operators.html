@@ -210,7 +210,7 @@ impl Operator for MyOperator {
         &amp;mut self,
         element: ArconElement&lt;Self::IN&gt;,
         mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-    ) -&gt; OperatorResult&lt;()&gt; {
+    ) -&gt; ArconResult&lt;()&gt; {
         let custom_event = CustomEvent { id: element.data };
 
         ctx.output(ArconElement {
@@ -241,12 +241,12 @@ impl Operator for MyOperator {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        element: ArconElement&lt;Self::IN&gt;,
 </span><span class="boring">        mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        let current_time = ctx.current_time()?;
 </span><span class="boring">        let key = element.data.get_key();
 </span><span class="boring">        let time = current_time + 1000;
 </span><span class="boring">
-</span><span class="boring">        if let Err(err) = ctx.schedule_at(key, time, element.data.id) {
+</span><span class="boring">        if let Err(err) = ctx.schedule_at(key, time, element.data.id)? {
 </span><span class="boring">            error!(ctx.log(), &quot;Failed to schedule timer with err {}&quot;, err);
 </span><span class="boring">        }
 </span><span class="boring">
@@ -259,7 +259,7 @@ impl Operator for MyOperator {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        timeout: Self::TimerState,
 </span><span class="boring">        ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        info!(ctx.log(), &quot;Got a timer timeout for {:?}&quot;, timeout);
 </span><span class="boring">        Ok(())
 </span><span class="boring">    }
@@ -316,7 +316,7 @@ pub struct CustomEvent {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        element: ArconElement&lt;Self::IN&gt;,
 </span><span class="boring">        mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        let custom_event = CustomEvent { id: element.data };
 </span><span class="boring">
 </span><span class="boring">        ctx.output(ArconElement {
@@ -347,12 +347,12 @@ pub struct CustomEvent {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        element: ArconElement&lt;Self::IN&gt;,
 </span><span class="boring">        mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        let current_time = ctx.current_time()?;
 </span><span class="boring">        let key = element.data.get_key();
 </span><span class="boring">        let time = current_time + 1000;
 </span><span class="boring">
-</span><span class="boring">        if let Err(err) = ctx.schedule_at(key, time, element.data.id) {
+</span><span class="boring">        if let Err(err) = ctx.schedule_at(key, time, element.data.id)? {
 </span><span class="boring">            error!(ctx.log(), &quot;Failed to schedule timer with err {}&quot;, err);
 </span><span class="boring">        }
 </span><span class="boring">
@@ -365,7 +365,7 @@ pub struct CustomEvent {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        timeout: Self::TimerState,
 </span><span class="boring">        ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        info!(ctx.log(), &quot;Got a timer timeout for {:?}&quot;, timeout);
 </span><span class="boring">        Ok(())
 </span><span class="boring">    }
@@ -425,7 +425,7 @@ per key.</p>
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        element: ArconElement&lt;Self::IN&gt;,
 </span><span class="boring">        mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        let custom_event = CustomEvent { id: element.data };
 </span><span class="boring">
 </span><span class="boring">        ctx.output(ArconElement {
@@ -456,12 +456,12 @@ impl Operator for TimerOperator {
         &amp;mut self,
         element: ArconElement&lt;Self::IN&gt;,
         mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-    ) -&gt; OperatorResult&lt;()&gt; {
+    ) -&gt; ArconResult&lt;()&gt; {
         let current_time = ctx.current_time()?;
         let key = element.data.get_key();
         let time = current_time + 1000;
 
-        if let Err(err) = ctx.schedule_at(key, time, element.data.id) {
+        if let Err(err) = ctx.schedule_at(key, time, element.data.id)? {
             error!(ctx.log(), &quot;Failed to schedule timer with err {}&quot;, err);
         }
 
@@ -474,7 +474,7 @@ impl Operator for TimerOperator {
         &amp;mut self,
         timeout: Self::TimerState,
         ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-    ) -&gt; OperatorResult&lt;()&gt; {
+    ) -&gt; ArconResult&lt;()&gt; {
         info!(ctx.log(), &quot;Got a timer timeout for {:?}&quot;, timeout);
         Ok(())
     }
@@ -531,7 +531,7 @@ impl Operator for TimerOperator {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        element: ArconElement&lt;Self::IN&gt;,
 </span><span class="boring">        mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        let custom_event = CustomEvent { id: element.data };
 </span><span class="boring">
 </span><span class="boring">        ctx.output(ArconElement {
@@ -562,12 +562,12 @@ impl Operator for TimerOperator {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        element: ArconElement&lt;Self::IN&gt;,
 </span><span class="boring">        mut ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        let current_time = ctx.current_time()?;
 </span><span class="boring">        let key = element.data.get_key();
 </span><span class="boring">        let time = current_time + 1000;
 </span><span class="boring">
-</span><span class="boring">        if let Err(err) = ctx.schedule_at(key, time, element.data.id) {
+</span><span class="boring">        if let Err(err) = ctx.schedule_at(key, time, element.data.id)? {
 </span><span class="boring">            error!(ctx.log(), &quot;Failed to schedule timer with err {}&quot;, err);
 </span><span class="boring">        }
 </span><span class="boring">
@@ -580,7 +580,7 @@ impl Operator for TimerOperator {
 </span><span class="boring">        &amp;mut self,
 </span><span class="boring">        timeout: Self::TimerState,
 </span><span class="boring">        ctx: OperatorContext&lt;Self, impl Backend, impl ComponentDefinition&gt;,
-</span><span class="boring">    ) -&gt; OperatorResult&lt;()&gt; {
+</span><span class="boring">    ) -&gt; ArconResult&lt;()&gt; {
 </span><span class="boring">        info!(ctx.log(), &quot;Got a timer timeout for {:?}&quot;, timeout);
 </span><span class="boring">        Ok(())
 </span><span class="boring">    }
