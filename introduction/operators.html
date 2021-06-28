@@ -277,11 +277,11 @@ impl Operator for MyOperator {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| MyOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| TimerOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .build();
@@ -383,11 +383,11 @@ pub struct CustomEvent {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| MyOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| TimerOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .build();
@@ -492,11 +492,11 @@ impl Operator for TimerOperator {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| MyOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| TimerOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .build();
@@ -598,11 +598,11 @@ impl Operator for TimerOperator {
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
         .operator(OperatorBuilder {
-            constructor: Arc::new(|_| MyOperator::default()),
+            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
             conf: Default::default(),
         })
         .operator(OperatorBuilder {
-            constructor: Arc::new(|_| TimerOperator::default()),
+            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
             conf: Default::default(),
         })
         .build();

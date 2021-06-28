@@ -231,7 +231,7 @@ pub struct Event {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
@@ -314,7 +314,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)

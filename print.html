@@ -190,14 +190,8 @@ fn main() {
             conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Filter::new(|x: &amp;u64| *x &gt; 50)),
-            conf: Default::default(),
-        })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Map::new(|x| x + 10)),
-            conf: Default::default(),
-        })
+        .filter(|x| *x &gt; 50)
+        .map(|x| x + 10)
         .build();
 
     pipeline.start();
@@ -324,7 +318,7 @@ pub struct Event {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
@@ -394,10 +388,7 @@ fn main() {
                 conf.set_timestamp_extractor(|x: &amp;Event| x.id);
             },
         )
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Filter::new(|event: &amp;Event| event.id &gt; 50)),
-            conf: Default::default(),
-        })
+        .filter(|event| event.id &gt; 50)
         .build();
 
     pipeline.start();
@@ -476,7 +467,7 @@ pub struct Event {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
@@ -559,7 +550,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
@@ -707,11 +698,11 @@ impl Operator for MyOperator {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| MyOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| TimerOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .build();
@@ -813,11 +804,11 @@ pub struct CustomEvent {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| MyOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| TimerOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .build();
@@ -922,11 +913,11 @@ impl Operator for TimerOperator {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| MyOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| TimerOperator::default()),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
 </span><span class="boring">            conf: Default::default(),
 </span><span class="boring">        })
 </span><span class="boring">        .build();
@@ -1028,11 +1019,11 @@ impl Operator for TimerOperator {
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
         .operator(OperatorBuilder {
-            constructor: Arc::new(|_| MyOperator::default()),
+            constructor: Arc::new(|_: Arc&lt;Sled&gt;| MyOperator::default()),
             conf: Default::default(),
         })
         .operator(OperatorBuilder {
-            constructor: Arc::new(|_| TimerOperator::default()),
+            constructor: Arc::new(|_: Arc&lt;Sled&gt;| TimerOperator::default()),
             conf: Default::default(),
         })
         .build();
@@ -1097,7 +1088,7 @@ below that shows an example of a Source that is working with the primitive <code
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
 <span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|_| Filter::new(|x| *x &gt; 50)),
+</span><span class="boring">            constructor: Arc::new(|_: Arc&lt;Sled&gt;| Filter::new(|x| *x &gt; 50)),
 </span><span class="boring">            conf: OperatorConf {
 </span><span class="boring">                parallelism_strategy: ParallelismStrategy::Static(1),
 </span><span class="boring">                ..Default::default()
@@ -1123,14 +1114,8 @@ fn main() {
             conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Filter::new(|x: &amp;u64| *x &gt; 50)),
-            conf: Default::default(),
-        })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Map::new(|x| x + 10)),
-            conf: Default::default(),
-        })
+        .filter(|x| *x &gt; 50)
+        .map(|x| x + 10)
         .build();
 
     pipeline.start();
@@ -1155,10 +1140,7 @@ fn main() {
         .file(&quot;file_source_data&quot;, |cfg| {
             cfg.set_arcon_time(ArconTime::Process);
         })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| FlatMap::new(|x| (0..x))),
-            conf: Default::default(),
-        })
+        .flatmap(|x| (0..x))
         .to_console()
         .build();
 
@@ -1192,7 +1174,7 @@ configuration.</p>
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
 </span>        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Filter::new(|x| *x &gt; 50)),
+            constructor: Arc::new(|_: Arc&lt;Sled&gt;| Filter::new(|x| *x &gt; 50)),
             conf: OperatorConf {
                 parallelism_strategy: ParallelismStrategy::Static(1),
                 ..Default::default()
@@ -1250,14 +1232,8 @@ fn main() {
             conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Filter::new(|x: &amp;u64| *x &gt; 50)),
-            conf: Default::default(),
-        })
-        .operator(OperatorBuilder {
-            constructor: Arc::new(|_| Map::new(|x| x + 10)),
-            conf: Default::default(),
-        })
+        .filter(|x| *x &gt; 50)
+        .map(|x| x + 10)
         .build();
 
     pipeline.start();
@@ -1665,7 +1641,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
@@ -1745,7 +1721,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
@@ -1871,7 +1847,7 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">            },
 </span><span class="boring">        )
 </span><span class="boring">        .operator(OperatorBuilder {
-</span><span class="boring">            constructor: Arc::new(|backend| {
+</span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
 </span><span class="boring">                    state.events().put(event)?;
 </span><span class="boring">                    Ok(event)
