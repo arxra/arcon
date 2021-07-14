@@ -1291,7 +1291,7 @@ impl&lt;B: Backend&gt; StateConstructor for StreamState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">    state.counter().put(10)?;
 </span><span class="boring">
-</span><span class="boring">    assert_eq!(state.counter().rmw(|v| *v += 10).is_ok(), true);
+</span><span class="boring">    assert!(state.counter().rmw(|v| *v += 10).is_ok());
 </span><span class="boring">
 </span><span class="boring">    let counter = state.counter().get()?;
 </span><span class="boring">    assert_eq!(counter.unwrap().as_ref(), &amp;20);
@@ -1371,7 +1371,7 @@ impl&lt;B: Backend&gt; StateConstructor for StreamState&lt;B&gt; {
 
     state.counter().put(10)?;
 
-    assert_eq!(state.counter().rmw(|v| *v += 10).is_ok(), true);
+    assert!(state.counter().rmw(|v| *v += 10).is_ok());
 
     let counter = state.counter().get()?;
     assert_eq!(counter.unwrap().as_ref(), &amp;20);
@@ -1453,7 +1453,7 @@ dealing with a single object.</p>
 </span><span class="boring">
 </span><span class="boring">    state.counter().put(10)?;
 </span><span class="boring">
-</span><span class="boring">    assert_eq!(state.counter().rmw(|v| *v += 10).is_ok(), true);
+</span><span class="boring">    assert!(state.counter().rmw(|v| *v += 10).is_ok());
 </span><span class="boring">
 </span><span class="boring">    let counter = state.counter().get()?;
 </span><span class="boring">    assert_eq!(counter.unwrap().as_ref(), &amp;20);
@@ -1533,7 +1533,7 @@ dealing with a single object.</p>
 </span><span class="boring">
 </span><span class="boring">    state.counter().put(10)?;
 </span><span class="boring">
-</span><span class="boring">    assert_eq!(state.counter().rmw(|v| *v += 10).is_ok(), true);
+</span><span class="boring">    assert!(state.counter().rmw(|v| *v += 10).is_ok());
 </span><span class="boring">
 </span><span class="boring">    let counter = state.counter().get()?;
 </span><span class="boring">    assert_eq!(counter.unwrap().as_ref(), &amp;20);
