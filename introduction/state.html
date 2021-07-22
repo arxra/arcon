@@ -222,14 +222,9 @@ pub struct Event {
 </span><span class="boring">    };
 </span><span class="boring">
 </span><span class="boring">    let mut app = Application::with_conf(conf)
-</span><span class="boring">        .collection(
-</span><span class="boring">            (0..1000000)
-</span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
-</span><span class="boring">                .collect::&lt;Vec&lt;Event&gt;&gt;(),
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .iterator((0..1000000).map(|x| Event { id: x, data: 1.5 }), |conf| {
+</span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;Event| x.id);
+</span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
 </span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
@@ -305,14 +300,9 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">    };
 </span><span class="boring">
 </span><span class="boring">    let mut app = Application::with_conf(conf)
-</span><span class="boring">        .collection(
-</span><span class="boring">            (0..1000000)
-</span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
-</span><span class="boring">                .collect::&lt;Vec&lt;Event&gt;&gt;(),
-</span><span class="boring">            |conf| {
-</span><span class="boring">                conf.set_timestamp_extractor(|x: &amp;Event| x.id);
-</span><span class="boring">            },
-</span><span class="boring">        )
+</span><span class="boring">        .iterator((0..1000000).map(|x| Event { id: x, data: 1.5 }), |conf| {
+</span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;Event| x.id);
+</span><span class="boring">        })
 </span><span class="boring">        .operator(OperatorBuilder {
 </span><span class="boring">            constructor: Arc::new(|backend: Arc&lt;Sled&gt;| {
 </span><span class="boring">                Map::stateful(MyState::new(backend), |event, state| {
