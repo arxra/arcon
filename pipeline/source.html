@@ -177,7 +177,7 @@ below that shows an example of a Source that is working with the primitive <code
 <pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span>            conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
@@ -192,8 +192,8 @@ below that shows an example of a Source that is working with the primitive <code
 </span><span class="boring">        .to_console()
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#pre-defined-sources" id="pre-defined-sources">Pre-defined Sources</a></h2>
@@ -203,7 +203,7 @@ It takes a <code>Vec&lt;A&gt;</code> as argument where <code>A: ArconType</code>
 <pre><code class="language-rust edition2018 no_run noplaypen">use arcon::prelude::*;
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .with_debug_node()
         .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_arcon_time(ArconTime::Event);
@@ -213,15 +213,17 @@ fn main() {
         .map(|x| x + 10)
         .build();
 
-    pipeline.start();
+    app.start();
 
     std::thread::sleep(std::time::Duration::from_millis(5000));
-    let debug_node = pipeline.get_debug_node::&lt;u64&gt;().unwrap();
+    let debug_node = app.get_debug_node::&lt;u64&gt;().unwrap();
 
     debug_node.on_definition(|cd| {
         let sum: u64 = cd.data.iter().map(|elem| elem.data).sum();
         assert_eq!(sum, 4165);
     });
+
+    app.shutdown();
 }
 </code></pre>
 <h3><a class="header" href="#file" id="file">File</a></h3>
@@ -231,7 +233,7 @@ Rust’s <code>std::str::FromStr</code> type.</p>
 <pre><code class="language-rust edition2018 no_run noplaypen">use arcon::prelude::*;
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .file(&quot;file_source_data&quot;, |cfg| {
             cfg.set_arcon_time(ArconTime::Process);
         })
@@ -239,8 +241,8 @@ fn main() {
         .to_console()
         .build();
 
-    pipeline.start();
-    pipeline.await_termination();
+    app.start();
+    app.await_termination();
 }
 </code></pre>
 <h2><a class="header" href="#creating-a-custom-source" id="creating-a-custom-source">Creating a custom Source</a></h2>

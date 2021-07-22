@@ -184,7 +184,7 @@ arcon = { git = &quot;https://github.com/cda-group/arcon&quot; }
 <pre><code class="language-rust edition2018 no_run noplaypen">use arcon::prelude::*;
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .with_debug_node()
         .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_arcon_time(ArconTime::Event);
@@ -194,15 +194,17 @@ fn main() {
         .map(|x| x + 10)
         .build();
 
-    pipeline.start();
+    app.start();
 
     std::thread::sleep(std::time::Duration::from_millis(5000));
-    let debug_node = pipeline.get_debug_node::&lt;u64&gt;().unwrap();
+    let debug_node = app.get_debug_node::&lt;u64&gt;().unwrap();
 
     debug_node.on_definition(|cd| {
         let sum: u64 = cd.data.iter().map(|elem| elem.data).sum();
         assert_eq!(sum, 4165);
     });
+
+    app.shutdown();
 }
 </code></pre>
 <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
@@ -302,13 +304,13 @@ pub struct Event {
 </span><span class="boring">
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -328,7 +330,7 @@ pub struct Event {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -341,10 +343,10 @@ pub struct Event {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#generating-arcontype-from-proto-files" id="generating-arcontype-from-proto-files">Generating ArconType from .proto files</a></h2>
@@ -379,7 +381,7 @@ include the generated data into an Arcon application by doing the following:</p>
 include!(concat!(env!(&quot;OUT_DIR&quot;), &quot;/event.rs&quot;));
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .collection(
             (0..10000000)
                 .map(|x| Event { id: x })
@@ -391,8 +393,8 @@ fn main() {
         .filter(|event| event.id &gt; 50)
         .build();
 
-    pipeline.start();
-    pipeline.await_termination();
+    app.start();
+    app.await_termination();
 }
 </code></pre>
 <h1><a class="header" href="#state-management" id="state-management">State Management</a></h1>
@@ -451,13 +453,13 @@ pub struct Event {
 </span><span class="boring">
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -477,7 +479,7 @@ pub struct Event {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -490,10 +492,10 @@ pub struct Event {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>We then create our custom state object <code>MyState</code> and add the
@@ -534,13 +536,13 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -560,7 +562,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -573,10 +575,10 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>Examples of more state indexes can be found <a href="introduction/../pipeline/indexes.html">here</a>.</p>
@@ -693,7 +695,7 @@ impl Operator for MyOperator {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
@@ -707,8 +709,8 @@ impl Operator for MyOperator {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>For context, this is how the CustomEvent struct looks like.</p>
@@ -799,7 +801,7 @@ pub struct CustomEvent {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
@@ -813,8 +815,8 @@ pub struct CustomEvent {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>We then create another Operator called <code>TimerOperator</code> that receives CustomEvent’s and
@@ -908,7 +910,7 @@ impl Operator for TimerOperator {
 }
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
@@ -922,8 +924,8 @@ impl Operator for TimerOperator {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>Finally, we create a simple Pipeline to that uses our custom operators.</p>
@@ -1014,7 +1016,7 @@ impl Operator for TimerOperator {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span>    let mut pipeline = Pipeline::default()
+</span>    let mut app = Application::default()
         .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
@@ -1028,8 +1030,8 @@ impl Operator for TimerOperator {
         })
         .build();
 <span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h1><a class="header" href="#pipeline-1" id="pipeline-1">Pipeline</a></h1>
@@ -1060,8 +1062,8 @@ the batching of events to a maximum of 1024 events.</p>
 
 fn main() {
     let path = &quot;guide/examples/arcon.conf&quot;;
-    let conf = ArconConf::from_file(path);
-    let _pipeline = Pipeline::with_conf(conf);
+    let conf = ApplicationConf::from_file(path);
+    let _app = Application::with_conf(conf);
 }
 </code></pre>
 <h1><a class="header" href="#sources" id="sources">Sources</a></h1>
@@ -1082,7 +1084,7 @@ below that shows an example of a Source that is working with the primitive <code
 <pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span>            conf.set_arcon_time(ArconTime::Event);
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
@@ -1097,8 +1099,8 @@ below that shows an example of a Source that is working with the primitive <code
 </span><span class="boring">        .to_console()
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#pre-defined-sources" id="pre-defined-sources">Pre-defined Sources</a></h2>
@@ -1108,7 +1110,7 @@ It takes a <code>Vec&lt;A&gt;</code> as argument where <code>A: ArconType</code>
 <pre><code class="language-rust edition2018 no_run noplaypen">use arcon::prelude::*;
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .with_debug_node()
         .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_arcon_time(ArconTime::Event);
@@ -1118,15 +1120,17 @@ fn main() {
         .map(|x| x + 10)
         .build();
 
-    pipeline.start();
+    app.start();
 
     std::thread::sleep(std::time::Duration::from_millis(5000));
-    let debug_node = pipeline.get_debug_node::&lt;u64&gt;().unwrap();
+    let debug_node = app.get_debug_node::&lt;u64&gt;().unwrap();
 
     debug_node.on_definition(|cd| {
         let sum: u64 = cd.data.iter().map(|elem| elem.data).sum();
         assert_eq!(sum, 4165);
     });
+
+    app.shutdown();
 }
 </code></pre>
 <h3><a class="header" href="#file" id="file">File</a></h3>
@@ -1136,7 +1140,7 @@ Rust’s <code>std::str::FromStr</code> type.</p>
 <pre><code class="language-rust edition2018 no_run noplaypen">use arcon::prelude::*;
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .file(&quot;file_source_data&quot;, |cfg| {
             cfg.set_arcon_time(ArconTime::Process);
         })
@@ -1144,8 +1148,8 @@ fn main() {
         .to_console()
         .build();
 
-    pipeline.start();
-    pipeline.await_termination();
+    app.start();
+    app.await_termination();
 }
 </code></pre>
 <h2><a class="header" href="#creating-a-custom-source" id="creating-a-custom-source">Creating a custom Source</a></h2>
@@ -1168,7 +1172,7 @@ configuration.</p>
 <pre><code class="language-rust edition2018 no_run noplaypen"><span class="boring">use arcon::prelude::*;
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_arcon_time(ArconTime::Event);
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
@@ -1183,8 +1187,8 @@ configuration.</p>
 <span class="boring">        .to_console()
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h3><a class="header" href="#operator-constructor" id="operator-constructor">Operator Constructor</a></h3>
@@ -1226,7 +1230,7 @@ Arcon does not require any explicit sink. If you wish to debug the output of the
 <pre><code class="language-rust edition2018 no_run noplaypen">use arcon::prelude::*;
 
 fn main() {
-    let mut pipeline = Pipeline::default()
+    let mut app = Application::default()
         .with_debug_node()
         .collection((0..100).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_arcon_time(ArconTime::Event);
@@ -1236,15 +1240,17 @@ fn main() {
         .map(|x| x + 10)
         .build();
 
-    pipeline.start();
+    app.start();
 
     std::thread::sleep(std::time::Duration::from_millis(5000));
-    let debug_node = pipeline.get_debug_node::&lt;u64&gt;().unwrap();
+    let debug_node = app.get_debug_node::&lt;u64&gt;().unwrap();
 
     debug_node.on_definition(|cd| {
         let sum: u64 = cd.data.iter().map(|elem| elem.data).sum();
         assert_eq!(sum, 4165);
     });
+
+    app.shutdown();
 }
 </code></pre>
 <h1><a class="header" href="#state-backends" id="state-backends">State Backends</a></h1>
@@ -1625,13 +1631,13 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -1651,7 +1657,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -1664,10 +1670,10 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#watching-from-a-thread" id="watching-from-a-thread">Watching from a thread</a></h2>
@@ -1705,13 +1711,13 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -1731,7 +1737,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span>    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span>    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
         println!(&quot;Got state object for epoch {}&quot;, epoch);
     });
 <span class="boring">
@@ -1744,10 +1750,10 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#watching-from-a-kompact-component" id="watching-from-a-kompact-component">Watching from a Kompact component</a></h2>
@@ -1831,13 +1837,13 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -1857,7 +1863,7 @@ The snippet below shows how an example of how to do this.</p>
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -1870,10 +1876,10 @@ The snippet below shows how an example of how to do this.</p>
         .wait_timeout(std::time::Duration::from_millis(200))
         .expect(&quot;Failed to start component&quot;);
 
-    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 <span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <h2><a class="header" href="#executing-sql-queries" id="executing-sql-queries">Executing SQL queries</a></h2>

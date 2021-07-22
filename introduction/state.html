@@ -215,13 +215,13 @@ pub struct Event {
 </span><span class="boring">
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -241,7 +241,7 @@ pub struct Event {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -254,10 +254,10 @@ pub struct Event {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>We then create our custom state object <code>MyState</code> and add the
@@ -298,13 +298,13 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let conf = ArconConf {
+</span><span class="boring">    let conf = ApplicationConf {
 </span><span class="boring">        epoch_interval: 2500,
 </span><span class="boring">        ctrl_system_host: Some(&quot;127.0.0.1:2000&quot;.to_string()),
 </span><span class="boring">        ..Default::default()
 </span><span class="boring">    };
 </span><span class="boring">
-</span><span class="boring">    let mut pipeline = Pipeline::with_conf(conf)
+</span><span class="boring">    let mut app = Application::with_conf(conf)
 </span><span class="boring">        .collection(
 </span><span class="boring">            (0..1000000)
 </span><span class="boring">                .map(|x| Event { id: x, data: 1.5 })
@@ -324,7 +324,7 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
+</span><span class="boring">    app.watch(|epoch: u64, _: MyState&lt;Sled&gt;| {
 </span><span class="boring">        println!(&quot;Got state object for epoch {}&quot;, epoch);
 </span><span class="boring">    });
 </span><span class="boring">
@@ -337,10 +337,10 @@ impl&lt;B: Backend&gt; StateConstructor for MyState&lt;B&gt; {
 </span><span class="boring">        .wait_timeout(std::time::Duration::from_millis(200))
 </span><span class="boring">        .expect(&quot;Failed to start component&quot;);
 </span><span class="boring">
-</span><span class="boring">    pipeline.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
+</span><span class="boring">    app.watch_with::&lt;MyState&lt;Sled&gt;&gt;(snapshot_comp);
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>Examples of more state indexes can be found <a href="../pipeline/indexes.html">here</a>.</p>

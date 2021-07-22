@@ -272,7 +272,7 @@ impl Operator for MyOperator {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
@@ -286,8 +286,8 @@ impl Operator for MyOperator {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>For context, this is how the CustomEvent struct looks like.</p>
@@ -378,7 +378,7 @@ pub struct CustomEvent {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
@@ -392,8 +392,8 @@ pub struct CustomEvent {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>We then create another Operator called <code>TimerOperator</code> that receives CustomEvent’s and
@@ -487,7 +487,7 @@ impl Operator for TimerOperator {
 }
 <span class="boring">
 </span><span class="boring">fn main() {
-</span><span class="boring">    let mut pipeline = Pipeline::default()
+</span><span class="boring">    let mut app = Application::default()
 </span><span class="boring">        .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
 </span><span class="boring">            conf.set_timestamp_extractor(|x: &amp;u64| *x);
 </span><span class="boring">        })
@@ -501,8 +501,8 @@ impl Operator for TimerOperator {
 </span><span class="boring">        })
 </span><span class="boring">        .build();
 </span><span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 <p>Finally, we create a simple Pipeline to that uses our custom operators.</p>
@@ -593,7 +593,7 @@ impl Operator for TimerOperator {
 </span><span class="boring">}
 </span><span class="boring">
 </span><span class="boring">fn main() {
-</span>    let mut pipeline = Pipeline::default()
+</span>    let mut app = Application::default()
         .collection((0..10000000).collect::&lt;Vec&lt;u64&gt;&gt;(), |conf| {
             conf.set_timestamp_extractor(|x: &amp;u64| *x);
         })
@@ -607,8 +607,8 @@ impl Operator for TimerOperator {
         })
         .build();
 <span class="boring">
-</span><span class="boring">    pipeline.start();
-</span><span class="boring">    pipeline.await_termination();
+</span><span class="boring">    app.start();
+</span><span class="boring">    app.await_termination();
 </span><span class="boring">}
 </span></code></pre>
 
