@@ -152,9 +152,6 @@ pub struct ImmutableTable {
 }
 
 impl ImmutableTable {
-    pub fn mem_table(self) -> Result<MemTable, DataFusionError> {
-        MemTable::try_new(self.schema, vec![self.batches])
-    }
     pub fn name(&self) -> String {
         self.name.clone()
     }

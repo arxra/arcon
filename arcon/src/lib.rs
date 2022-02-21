@@ -100,11 +100,7 @@ pub use arrow::{
     error::ArrowError,
 };
 #[doc(hidden)]
-pub use fxhash::FxHasher;
-#[doc(hidden)]
 pub use kompact::prelude::SerId;
-#[doc(hidden)]
-pub use twox_hash::XxHash64;
 
 // exposed for benching
 #[doc(hidden)]
@@ -186,7 +182,7 @@ pub mod prelude {
 
     #[cfg(feature = "kafka")]
     pub use crate::stream::source::kafka::KafkaConsumerConf;
-    #[cfg(feature = "serde_json")]
+    #[cfg(all(feature = "serde_json", feature = "serde"))]
     pub use crate::stream::source::schema::JsonSchema;
     #[cfg(feature = "kafka")]
     pub use rdkafka::config::ClientConfig;
