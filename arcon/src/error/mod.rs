@@ -107,7 +107,7 @@ impl From<ArrowError> for Error {
     fn from(error: ArrowError) -> Self {
         let msg = error.to_string();
         match error {
-            ArrowError::IoError(err) => Error::Io {
+            ArrowError::Io(err) => Error::Io {
                 error: io::Error::new(ErrorKind::Other, err),
             },
             // Transform rest of errors as unsupported

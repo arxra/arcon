@@ -21,7 +21,7 @@ pub fn derive_arrow(input: TokenStream) -> TokenStream {
                         let value = self.#ident;
                         match builder.field_builder::<<#ty as ToArrow>::Builder>(#field_pos) {
                             Some(b) => b.append_value(value)?,
-                            None => return Err(::arcon::ArrowError::SchemaError(format!("Failed to downcast Arrow Builder"))),
+                            None => return Err(::arcon::ArrowError::ExternalFormat(format!("Failed to downcast Arrow Builder"))),
                         }
                     }
                 };
@@ -45,7 +45,7 @@ pub fn derive_arrow(input: TokenStream) -> TokenStream {
                             None => b.append_null()?,
                         }
                     }
-                    None => return Err(::arcon::ArrowError::SchemaError(format!("Failed to downcast Arrow Builder"))),
+                    None => return Err(::arcon::ArrowError::ExternalFormat(format!("Failed to downcast Arrow Builder"))),
                 }
             };
             builders.push(builder_quote);

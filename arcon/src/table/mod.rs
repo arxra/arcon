@@ -1,21 +1,26 @@
 use crate::data::arrow::ToArrow;
 use arrow::{
-    array::{ArrayBuilder, StructBuilder},
+    array::{Array, TryPush},
+    buffer::Buffer,
     datatypes::Schema,
     error::ArrowError,
-    ipc::{
-        convert::*,
-        reader::{read_record_batch, FileReader},
-        writer::{DictionaryTracker, FileWriter, IpcDataGenerator, IpcWriteOptions},
+    io::ipc::{
+        read::{read_record_batch, FileReader},
+        write::{write, FileWriter},
     },
-    record_batch::RecordBatch,
+    io::{
+        ipc::write::{default_ipc_fields, schema_to_bytes},
+        parquet::read::ParquetError,
+    },
 };
-use datafusion::{datasource::MemTable, error::DataFusionError};
-use parquet::arrow::ParquetFileArrowReader;
-use parquet::basic::Compression;
-use parquet::file::properties::WriterProperties;
-use parquet::file::reader::SerializedFileReader;
-use parquet::{arrow::arrow_writer::ArrowWriter, errors::ParquetError};
+use datafusion::{
+    datasource::MemTable, error::DataFusionError, field_util::SchemaExt, record_batch::RecordBatch,
+};
+// use parquet::arrow::ParquetFileArrowReader;
+// use parquet::basic::Compression;
+// use parquet::file::properties::WriterProperties;
+// use parquet::file::reader::SerializedFileReader;
+// use parquet::{arrow::arrow_writer::ArrowWriter, errors::ParquetError};
 use std::fs::File;
 use std::path::Path;
 use std::{convert::TryFrom, sync::Arc};
@@ -92,7 +97,7 @@ impl MutableTable {
     }
 
     #[inline]
-    pub fn raw_batches(&mut self) -> Result<Vec<RawRecordBatch>, ArrowError> {
+    pub fn raw_batches(&mut self) -> Result<Vec<RawChunk>, ArrowError> {
         self.finish()?;
         let batches = self.batches()?;
         to_raw_batches(batches)
@@ -103,11 +108,11 @@ impl MutableTable {
 pub struct RecordBatchBuilder {
     table_name: String,
     schema: Arc<Schema>,
-    builder: StructBuilder,
+    builder: Vec<Arc<dyn Array>>,
 }
 
 impl RecordBatchBuilder {
-    pub fn new(table_name: String, schema: Schema, builder: StructBuilder) -> Self {
+    pub fn new(table_name: String, schema: Schema, builder: Vec<Arc<dyn Array>>) -> Self {
         Self {
             table_name,
             schema: Arc::new(schema),
@@ -116,8 +121,7 @@ impl RecordBatchBuilder {
     }
     #[inline]
     pub fn append(&mut self, elem: impl ToArrow, timestamp: Option<u64>) -> Result<(), ArrowError> {
-        elem.append(&mut self.builder, timestamp)?;
-        self.builder.append(true)
+        elem.append(&mut self.builder, timestamp)
     }
     pub fn name(&self) -> &str {
         &self.table_name
@@ -132,13 +136,7 @@ impl RecordBatchBuilder {
         self.schema.clone()
     }
     pub fn record_batch(&mut self) -> Result<RecordBatch, ArrowError> {
-        let columns = self.schema.fields().len();
-        let data_arr = self.builder.finish();
-        let mut arr = Vec::with_capacity(columns);
-        for i in 0..columns {
-            arr.push(data_arr.column(i).clone());
-        }
-        RecordBatch::try_new(self.schema(), arr)
+        RecordBatch::try_new(self.schema(), self.builder)
     }
     pub fn set_name(&mut self, name: &str) {
         self.table_name = name.to_string();
@@ -174,16 +172,16 @@ impl ImmutableTable {
 #[inline]
 pub fn to_record_batches(
     schema: Arc<Schema>,
-    raw_batches: Vec<RawRecordBatch>,
+    raw_batches: Vec<RawChunk>,
 ) -> Result<Vec<RecordBatch>, ArrowError> {
     let dict_fields = Vec::new();
     let mut batches = Vec::with_capacity(raw_batches.len());
     for raw in raw_batches {
-        let message = arrow::ipc::root_as_message(&raw.ipc_message)
-            .map_err(|e| ArrowError::IoError(e.to_string()))?;
+        let message =
+            schema_to_bytes(&raw.schema).map_err(|e| ArrowError::IoError(e.to_string()))?;
 
         match message.header_type() {
-            arrow::ipc::MessageHeader::RecordBatch => {
+            arrow_format::ipc::MessageHeader::RecordBatch => {
                 if let Some(batch) = message.header_as_record_batch() {
                     let record_batch =
                         read_record_batch(&raw.arrow_data, batch, schema.clone(), &dict_fields)
@@ -206,21 +204,28 @@ pub fn to_record_batches(
 }
 
 #[inline]
-pub fn to_raw_batches(batches: Vec<RecordBatch>) -> Result<Vec<RawRecordBatch>, ArrowError> {
+pub fn to_raw_batches(batches: Vec<RecordBatch>) -> Result<Vec<RawChunk>, ArrowError> {
     let mut raw_batches = Vec::with_capacity(batches.len());
-    let ipc = IpcDataGenerator::default();
-    let write_options = IpcWriteOptions::default();
-    let mut tracker = DictionaryTracker::new(false);
 
     for batch in batches {
-        let (_, encoded_data) = ipc
-            .encoded_batch(&batch, &mut tracker, &write_options)
-            .map_err(|e| ArrowError::IoError(e.to_string()))?;
+        let ipc_fields = default_ipc_fields(batch.schema().fields());
+        let schema = schema_to_bytes(&batch.schema(), &ipc_fields);
+        let mut arrow_data: Vec<u8> = Vec::with_capacity(batch.columns().len());
+        let buffers = Vec::with_capacity(batch.columns().len());
+        buffers.append(batch.columns());
+        let mut nodes = Vec::new();
 
-        raw_batches.push(RawRecordBatch {
-            ipc_message: encoded_data.ipc_message,
-            arrow_data: encoded_data.arrow_data,
-        });
+        write(
+            &batch.columns(),
+            buffers,
+            &arrow_data,
+            &mut nodes,
+            &mut 0,
+            true,
+            None,
+        );
+
+        raw_batches.push(RawChunk { schema, arrow_data });
     }
 
     Ok(raw_batches)
@@ -245,9 +250,9 @@ impl TryFrom<RawTable> for ImmutableTable {
 
 /// A Raw version of an Arrow RecordBatch
 #[derive(prost::Message, Clone)]
-pub struct RawRecordBatch {
+pub struct RawChunk {
     #[prost(bytes)]
-    pub ipc_message: Vec<u8>,
+    pub schema: Vec<u8>,
     #[prost(bytes)]
     pub arrow_data: Vec<u8>,
 }
@@ -260,7 +265,7 @@ pub struct RawTable {
     #[prost(bytes)]
     pub schema: Vec<u8>,
     #[prost(message, repeated)]
-    pub batches: Vec<RawRecordBatch>,
+    pub batches: Vec<RawChunk>,
 }
 
 impl TryFrom<ImmutableTable> for RawTable {
@@ -274,15 +279,15 @@ impl TryFrom<ImmutableTable> for RawTable {
         let encoded_data = ipc.schema_to_bytes(&*table.schema(), &write_options);
         let raw_schema = encoded_data.ipc_message;
 
-        let mut raw_batches: Vec<RawRecordBatch> = Vec::with_capacity(table.batches.len());
+        let mut raw_batches: Vec<RawChunk> = Vec::with_capacity(table.batches.len());
 
         for batch in table.batches.iter() {
             let (_, encoded_data) = ipc
                 .encoded_batch(batch, &mut tracker, &write_options)
                 .map_err(|e| ArrowError::IoError(e.to_string()))?;
 
-            raw_batches.push(RawRecordBatch {
-                ipc_message: encoded_data.ipc_message,
+            raw_batches.push(RawChunk {
+                schema: encoded_data.ipc_message,
                 arrow_data: encoded_data.arrow_data,
             });
         }
