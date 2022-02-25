@@ -1,13 +1,12 @@
-use arrow::{datatypes::Schema, array::Array};
-
 use crate::{
     index::{IndexOps, WindowIndex},
     prelude::*,
     stream::operator::window::WindowContext,
-    table::{to_record_batches, ImmutableTable, RawChunk},
+    table::{to_record_batches, ImmutableTable, RawChunk, SchemedChunk},
     util::ArconFnBounds,
 };
 use arcon_state::{backend::handles::ActiveHandle, Backend, VecState};
+use arrow::datatypes::Schema;
 use std::marker::PhantomData;
 
 /// A window index for Arrow Data
@@ -18,7 +17,7 @@ pub struct ArrowWindow<IN, OUT, F, B>
 where
     IN: ArconType + ToArrow,
     OUT: ArconType,
-    F: Fn(Arc<Schema>, Vec<Chunk<Arc<dyn Array>>>) -> ArconResult<OUT> + ArconFnBounds,
+    F: Fn(Arc<Schema>, Vec<SchemedChunk>) -> ArconResult<OUT> + ArconFnBounds,
     B: Backend,
 {
     handle: ActiveHandle<B, VecState<RawChunk>, u64, u64>,
@@ -31,7 +30,7 @@ impl<IN, OUT, F, B> ArrowWindow<IN, OUT, F, B>
 where
     IN: ArconType + ToArrow,
     OUT: ArconType,
-    F: Fn(Arc<Schema>, Vec<Chunk<Arc<dyn Array>>>) -> ArconResult<OUT> + ArconFnBounds,
+    F: Fn(Arc<Schema>, Vec<SchemedChunk>) -> ArconResult<OUT> + ArconFnBounds,
     B: Backend,
 {
     pub fn new(backend: Arc<B>, udf: F) -> Self {
@@ -56,7 +55,7 @@ impl<IN, OUT, F, B> WindowIndex for ArrowWindow<IN, OUT, F, B>
 where
     IN: ArconType + ToArrow,
     OUT: ArconType,
-    F: Fn(Arc<Schema>, Vec<Chunk<Arc<dyn Array>>>) -> ArconResult<OUT> + ArconFnBounds,
+    F: Fn(Arc<Schema>, Vec<SchemedChunk>) -> ArconResult<OUT> + ArconFnBounds,
     B: Backend,
 {
     type IN = IN;
@@ -78,7 +77,7 @@ where
         let mut batches = table.batches()?;
         // fetch if any raw batches and append to the vector...
         let raw_batches = self.handle.get()?;
-        batches.append(&mut to_record_batches(Arc::new(IN::schema()), raw_batches)?);
+        batches.append(&mut to_record_batches(raw_batches)?);
 
         (self.udf)(Arc::new(IN::schema()), batches)
     }
@@ -100,7 +99,7 @@ impl<IN, OUT, F, B> IndexOps for ArrowWindow<IN, OUT, F, B>
 where
     IN: ArconType + ToArrow,
     OUT: ArconType,
-    F: Fn(Arc<Schema>, Vec<Chunk<Arc<dyn Array>>>) -> ArconResult<OUT> + ArconFnBounds,
+    F: Fn(Arc<Schema>, Vec<SchemedChunk>) -> ArconResult<OUT> + ArconFnBounds,
     B: Backend,
 {
     fn persist(&mut self) -> ArconResult<()> {

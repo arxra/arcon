@@ -3,7 +3,7 @@ name = "arcon"
 version = "0.2.0"
 authors = ["Max Meldrum <mmeldrum@kth.se>"]
 edition = "2018"
-rust-version = "1.56"
+rust-version = "1.57"
 readme = "../README.md"
 license = "Apache-2.0"
 repository = "https://github.com/cda-group/arcon"
@@ -37,8 +37,8 @@ crossbeam-utils = "0.7"
 num_cpus = "1.0"
 hierarchical_hash_wheel_timer = "1.1"
 snafu = "0.6"
-arrow = "5.0"
-parquet = { version = "5.0", features = ["zstd"] }
+arrow = { package = "arrow2", version = "0.9.1", features = [ "io_ipc", "io_parquet", "io_flight"] }
+arrow-format = "0.4"
 
 # Logging
 slog = "2"

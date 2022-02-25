@@ -20,7 +20,7 @@ The APIs may break and you should not be running Arcon with important data!
 
 #### Rust Version
 
-Arcon builds against the latest stable release and the current MSRV is 1.56.1
+Arcon builds against the latest stable release and the current MSRV is 1.57
 
 ### Roadmap
 

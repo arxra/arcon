@@ -7,7 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  msrv: 1.56.1
+  msrv: 1.57
 
 jobs:
   rustfmt:

@@ -71,7 +71,7 @@ pub fn derive_arrow(input: TokenStream) -> TokenStream {
                         ::arcon::DataType::Struct(#fields)
                     }
                     fn schema() -> ::arcon::Schema {
-                        ::arcon::Schema::new(#fields)
+                        ::arcon::Schema {fields: #fields, metadata: BTreeMap::new()}
                     }
                     fn append(self, builder: &mut ::arcon::StructBuilder, timestamp: Option<u64>) -> Result<(), ::arcon::ArrowError> {
                         #(#builders)*

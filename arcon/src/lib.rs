@@ -88,14 +88,11 @@ pub use crate::data::{ArconType, VersionId};
 pub use crate::{
     data::arrow::ToArrow,
     error::ArconResult,
-    table::{ImmutableTable, MutableTable, ChunkBuilder, RECORD_BATCH_SIZE},
+    table::{ImmutableTable, MutableTable, RECORD_BATCH_SIZE},
 };
 #[doc(hidden)]
 pub use arrow::{
-    array::{
-        StructArray,
-        UInt64Array,
-    },
+    array::{StructArray, UInt64Array},
     datatypes::{DataType, Field, Schema},
     error::ArrowError,
 };
@@ -199,8 +196,7 @@ pub mod prelude {
     pub use kompact::{get_core_ids, CoreId};
 
     pub use super::{Arrow, MutableTable, ToArrow};
-    pub use arrow::{datatypes::Schema, chunk::Chunk};
-    // pub use datafusion::{datasource::MemTable, prelude::*};
+    pub use arrow::{chunk::Chunk, datatypes::Schema};
 
     pub use arcon_state as state;
 

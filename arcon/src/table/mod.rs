@@ -1,32 +1,43 @@
 use crate::data::arrow::ToArrow;
 use arrow::{
-    array::{Array, TryPush},
-    buffer::Buffer,
+    array::Array,
+    chunk::Chunk,
     datatypes::Schema,
     error::ArrowError,
-    io::ipc::{
-        read::{read_record_batch, FileReader},
-        write::{write, FileWriter},
-    },
     io::{
-        ipc::write::{default_ipc_fields, schema_to_bytes},
-        parquet::read::ParquetError,
+        flight::{deserialize_batch, serialize_batch},
+        ipc::{
+            self,
+            read::{deserialize_schema, read_file_metadata},
+            write::{default_ipc_fields, schema_to_bytes},
+        },
+        parquet::{self, read::RecordReader},
     },
 };
-use datafusion::{
-    datasource::MemTable, error::DataFusionError, field_util::SchemaExt, record_batch::RecordBatch,
-};
-// use parquet::arrow::ParquetFileArrowReader;
-// use parquet::basic::Compression;
-// use parquet::file::properties::WriterProperties;
-// use parquet::file::reader::SerializedFileReader;
-// use parquet::{arrow::arrow_writer::ArrowWriter, errors::ParquetError};
-use std::fs::File;
+use arrow_format::flight::data::FlightData;
 use std::path::Path;
+use std::{collections::HashMap, fs::File};
 use std::{convert::TryFrom, sync::Arc};
 
 // Size for each RecordBatch in Arrow
 pub const RECORD_BATCH_SIZE: usize = 1024;
+
+// Looks the same as the old type
+#[derive(Debug, Clone)]
+pub struct SchemedChunk {
+    chunk: Chunk<Arc<dyn Array>>,
+    schema: Arc<Schema>,
+}
+
+impl SchemedChunk {
+    pub fn new(chunk: Chunk<Arc<dyn Array>>, schema: Arc<Schema>) -> Self {
+        Self { chunk, schema }
+    }
+
+    fn len(&self) -> usize {
+        self.chunk.len()
+    }
+}
 
 /// A Mutable Append Only Table
 #[derive(Debug)]
@@ -34,7 +45,7 @@ pub struct MutableTable {
     /// Builder used to append data to the table
     builder: RecordBatchBuilder,
     /// Stores appended record batches
-    batches: Vec<RecordBatch>,
+    batches: Vec<SchemedChunk>,
 }
 impl MutableTable {
     /// Creates a new MutableTable
@@ -49,7 +60,7 @@ impl MutableTable {
     #[inline]
     pub fn append(&mut self, elem: impl ToArrow, timestamp: Option<u64>) -> Result<(), ArrowError> {
         if self.builder.len() == RECORD_BATCH_SIZE {
-            let batch = self.builder.record_batch()?;
+            let batch = self.builder.record_batch();
             self.batches.push(batch);
         }
 
@@ -71,7 +82,7 @@ impl MutableTable {
     // internal helper to finish last batch
     fn finish(&mut self) -> Result<(), ArrowError> {
         if !self.builder.is_empty() {
-            let batch = self.builder.record_batch()?;
+            let batch = self.builder.record_batch();
             self.batches.push(batch);
         }
         Ok(())
@@ -89,7 +100,7 @@ impl MutableTable {
     }
 
     #[inline]
-    pub fn batches(&mut self) -> Result<Vec<RecordBatch>, ArrowError> {
+    pub fn batches(&mut self) -> Result<Vec<SchemedChunk>, ArrowError> {
         self.finish()?;
         let mut batches = Vec::new();
         std::mem::swap(&mut batches, &mut self.batches);
@@ -135,8 +146,8 @@ impl RecordBatchBuilder {
     pub fn schema(&self) -> Arc<Schema> {
         self.schema.clone()
     }
-    pub fn record_batch(&mut self) -> Result<RecordBatch, ArrowError> {
-        RecordBatch::try_new(self.schema(), self.builder)
+    pub fn record_batch(&mut self) -> SchemedChunk {
+        SchemedChunk::new(Chunk::new(self.builder.clone()), self.schema())
     }
     pub fn set_name(&mut self, name: &str) {
         self.table_name = name.to_string();
@@ -148,7 +159,7 @@ impl RecordBatchBuilder {
 pub struct ImmutableTable {
     pub(crate) name: String,
     pub(crate) schema: Arc<Schema>,
-    pub(crate) batches: Vec<RecordBatch>,
+    pub(crate) batches: Vec<SchemedChunk>,
 }
 
 impl ImmutableTable {
@@ -156,7 +167,7 @@ impl ImmutableTable {
         self.name.clone()
     }
     pub fn total_rows(&self) -> usize {
-        self.batches.iter().map(|r| r.num_rows()).sum()
+        self.batches.iter().map(|r| r.len()).sum()
     }
     pub fn schema(&self) -> Arc<Schema> {
         self.schema.clone()
@@ -167,62 +178,39 @@ impl ImmutableTable {
 }
 
 #[inline]
-pub fn to_record_batches(
-    schema: Arc<Schema>,
-    raw_batches: Vec<RawChunk>,
-) -> Result<Vec<RecordBatch>, ArrowError> {
-    let dict_fields = Vec::new();
-    let mut batches = Vec::with_capacity(raw_batches.len());
-    for raw in raw_batches {
-        let message =
-            schema_to_bytes(&raw.schema).map_err(|e| ArrowError::IoError(e.to_string()))?;
+pub fn to_record_batches(raw_batches: Vec<RawChunk>) -> Result<Vec<SchemedChunk>, ArrowError> {
+    let mut chunks: Vec<SchemedChunk> = Vec::with_capacity(raw_batches.len());
 
-        match message.header_type() {
-            arrow_format::ipc::MessageHeader::RecordBatch => {
-                if let Some(batch) = message.header_as_record_batch() {
-                    let record_batch =
-                        read_record_batch(&raw.arrow_data, batch, schema.clone(), &dict_fields)
-                            .map_err(|e| ArrowError::IoError(e.to_string()))?;
-                    batches.push(record_batch);
-                } else {
-                    return Err(ArrowError::IoError(
-                        "Failed to match RecordBatch".to_string(),
-                    ));
-                }
-            }
-            _ => {
-                return Err(ArrowError::IoError(
-                    "Matched unexpected ipc message".to_string(),
-                ))
-            }
-        }
+    for raw in raw_batches {
+        let (schema, ipc_schema) = deserialize_schema(&raw.schema)?;
+        let fields = &schema.fields;
+        let dictionaries = HashMap::new();
+        let chunk = deserialize_batch(&raw.arrow_data, fields, &ipc_schema, &dictionaries)?;
+        let schema = Arc::new(schema);
+
+        chunks.push(SchemedChunk { chunk, schema });
     }
-    Ok(batches)
+    Ok(chunks)
 }
 
 #[inline]
-pub fn to_raw_batches(batches: Vec<RecordBatch>) -> Result<Vec<RawChunk>, ArrowError> {
+pub fn to_raw_batches(batches: Vec<SchemedChunk>) -> Result<Vec<RawChunk>, ArrowError> {
     let mut raw_batches = Vec::with_capacity(batches.len());
 
     for batch in batches {
-        let ipc_fields = default_ipc_fields(batch.schema().fields());
-        let schema = schema_to_bytes(&batch.schema(), &ipc_fields);
-        let mut arrow_data: Vec<u8> = Vec::with_capacity(batch.columns().len());
-        let buffers = Vec::with_capacity(batch.columns().len());
-        buffers.append(batch.columns());
-        let mut nodes = Vec::new();
-
-        write(
-            &batch.columns(),
-            buffers,
-            &arrow_data,
-            &mut nodes,
-            &mut 0,
-            true,
-            None,
+        let ipc_fields = default_ipc_fields(&batch.schema.fields);
+        let schema = schema_to_bytes(&batch.schema, &ipc_fields);
+        let (dictionaries, arrow_data) = serialize_batch(
+            &batch.chunk,
+            &ipc_fields,
+            &ipc::write::WriteOptions { compression: None },
         );
 
-        raw_batches.push(RawChunk { schema, arrow_data });
+        raw_batches.push(RawChunk {
+            schema,
+            dictionaries,
+            arrow_data,
+        });
     }
 
     Ok(raw_batches)
@@ -233,9 +221,9 @@ impl TryFrom<RawTable> for ImmutableTable {
     type Error = ArrowError;
 
     fn try_from(table: RawTable) -> Result<Self, Self::Error> {
-        let s = schema_from_bytes(&table.schema).map_err(|e| ArrowError::IoError(e.to_string()))?;
+        let (s, _) = deserialize_schema(&table.schema)?;
         let schema = Arc::new(s);
-        let batches = to_record_batches(schema.clone(), table.batches)?;
+        let batches = to_record_batches(table.batches)?;
 
         Ok(ImmutableTable {
             name: table.name,
@@ -250,8 +238,10 @@ impl TryFrom<RawTable> for ImmutableTable {
 pub struct RawChunk {
     #[prost(bytes)]
     pub schema: Vec<u8>,
-    #[prost(bytes)]
-    pub arrow_data: Vec<u8>,
+    #[prost(message, repeated)]
+    pub dictionaries: Vec<FlightData>,
+    #[prost(message, required)]
+    pub arrow_data: FlightData,
 }
 
 /// A Raw version of [ImmutableTable] that can be persisted to disk or sent over the wire.
@@ -269,25 +259,9 @@ impl TryFrom<ImmutableTable> for RawTable {
     type Error = ArrowError;
 
     fn try_from(table: ImmutableTable) -> Result<Self, Self::Error> {
-        let ipc = IpcDataGenerator::default();
-        let write_options = IpcWriteOptions::default();
-        let mut tracker = DictionaryTracker::new(false);
-
-        let encoded_data = ipc.schema_to_bytes(&*table.schema(), &write_options);
-        let raw_schema = encoded_data.ipc_message;
-
-        let mut raw_batches: Vec<RawChunk> = Vec::with_capacity(table.batches.len());
-
-        for batch in table.batches.iter() {
-            let (_, encoded_data) = ipc
-                .encoded_batch(batch, &mut tracker, &write_options)
-                .map_err(|e| ArrowError::IoError(e.to_string()))?;
-
-            raw_batches.push(RawChunk {
-                schema: encoded_data.ipc_message,
-                arrow_data: encoded_data.arrow_data,
-            });
-        }
+        let ipc_fields = default_ipc_fields(&table.schema.fields);
+        let raw_schema = schema_to_bytes(&table.schema(), &ipc_fields);
+        let raw_batches = to_raw_batches(table.batches)?;
 
         Ok(RawTable {
             name: table.name,
@@ -300,18 +274,27 @@ impl TryFrom<ImmutableTable> for RawTable {
 #[allow(unused)]
 pub fn write_arrow_file(path: impl AsRef<Path>, table: ImmutableTable) -> Result<(), ArrowError> {
     let file = File::create(path)?;
-    let mut writer = FileWriter::try_new(file, &table.schema)?;
+
+    let options = ipc::write::WriteOptions { compression: None };
+    let mut writer = ipc::write::FileWriter::try_new(file, &table.schema, None, options)?;
+
     for batch in table.batches {
-        writer.write(&batch)?;
+        writer.write(&batch.chunk, None)?;
     }
     writer.finish()?;
     Ok(())
 }
 
 #[allow(unused)]
-pub fn arrow_file_reader(path: impl AsRef<Path>) -> Result<FileReader<File>, ArrowError> {
-    let file = File::open(path)?;
-    FileReader::try_new(file)
+pub fn arrow_file_reader(
+    path: impl AsRef<Path>,
+) -> Result<ipc::read::FileReader<File>, ArrowError> {
+    let mut file = File::open(path)?;
+    let metadata = read_file_metadata(&mut file)?;
+
+    let schema = metadata.schema.clone();
+
+    Ok(ipc::read::FileReader::new(file, metadata, None))
 }
 
 #[allow(unused)]
@@ -319,38 +302,53 @@ pub fn write_parquet_file(
     path: impl AsRef<Path>,
     table: ImmutableTable,
     compression: bool,
-) -> Result<(), ParquetError> {
-    let file = File::create(path)?;
-    let props = if compression {
-        WriterProperties::builder()
-            .set_compression(Compression::ZSTD)
-            .build()
+) -> Result<(), parquet::read::ParquetError> {
+    let mut writer = File::create(path)?;
+    let options = if compression {
+        parquet::write::WriteOptions {
+            write_statistics: true,
+            compression: parquet::write::Compression::Zstd,
+            version: parquet::write::Version::V2,
+        }
     } else {
-        WriterProperties::builder().build()
+        parquet::write::WriteOptions {
+            write_statistics: true,
+            compression: parquet::write::Compression::Uncompressed,
+            version: parquet::write::Version::V2,
+        }
     };
 
-    let mut writer = ArrowWriter::try_new(file, table.schema, Some(props))?;
-    for batch in table.batches {
-        writer.write(&batch)?;
-    }
-    writer.close()?;
+    let schema = table.schema;
+    let chunks = table.batches.into_iter().map(|a| Ok(a.chunk));
+    let encodings = vec![];
+    let row_groups =
+        parquet::write::RowGroupIterator::try_new(chunks, &schema, options, encodings)?;
+    let parquet_schema = row_groups.parquet_schema().to_owned();
+
+    parquet::write::write_file(
+        &mut writer,
+        row_groups,
+        &schema,
+        parquet_schema,
+        options,
+        None,
+    );
     Ok(())
 }
 
 #[allow(unused)]
 pub fn parquet_arrow_reader(
     path: impl AsRef<Path>,
-) -> Result<ParquetFileArrowReader, ParquetError> {
-    let file = File::open(path)?;
-    let file_reader = SerializedFileReader::new(file)?;
-    Ok(ParquetFileArrowReader::new(Arc::new(file_reader)))
+) -> Result<parquet::read::RecordReader<File>, parquet::read::ParquetError> {
+    let reader = File::open(path)?;
+    let rr = RecordReader::try_new(reader, None, None, None, None)?;
+    Ok(rr)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::ToArrow;
-    use parquet::arrow::ArrowReader;
     use tempfile::tempdir;
 
     #[derive(Arrow, Clone)]
@@ -385,7 +383,7 @@ mod tests {
 
         // verify rows
         let reader = arrow_file_reader(reader_path).unwrap();
-        let rows: usize = reader.map(|r| r.unwrap().num_rows()).sum();
+        let rows: usize = reader.map(|r| r.unwrap().len()).sum();
         assert_eq!(rows, total_rows);
     }
     #[test]
@@ -403,13 +401,12 @@ mod tests {
 
         // verify schema
         let mut reader = parquet_arrow_reader(reader_path).unwrap();
-        let reader_schema = reader.get_schema().unwrap();
-        assert_eq!(schema, Arc::new(reader_schema));
+        let reader_schema = reader.schema().to_owned();
+        assert_eq!(schema, reader_schema);
 
         // verify rows
-        let mut batch_reader = reader.get_record_reader(total_rows).unwrap();
-        let batch = batch_reader.next().unwrap().unwrap();
-        assert_eq!(batch.num_rows(), total_rows);
+        let batch = reader.next().unwrap().unwrap();
+        assert_eq!(batch.len(), total_rows);
     }
 
     #[test]
